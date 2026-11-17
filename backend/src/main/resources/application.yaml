@@ -1,3 +1,40 @@
 spring:
   application:
     name: finance-tracker
+
+  # Local development: load the repo-root .env as a properties file.
+  # "optional:" = don't fail if missing (e.g. in Docker or CI).
+  # Two paths so it works whether you start the app from backend/ or from the repo root.
+  config:
+    import:
+      - optional:file:../.env[.properties]
+      - optional:file:.env[.properties]
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  error:
+    include-stacktrace: never
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info

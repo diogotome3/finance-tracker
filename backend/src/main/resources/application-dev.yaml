@@ -1,0 +1,15 @@
+spring:
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    org.hibernate.SQL: debug                 # log every SQL statement
+    org.hibernate.orm.jdbc.bind: trace       # log the parameter values bound to them
+
+management:
+  endpoint:
+    health:
+      show-details: always                   # show the "db" component in /actuator/health
