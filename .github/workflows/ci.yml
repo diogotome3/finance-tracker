@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]      # run on every push to main…
+  pull_request:           # …and on every PR (any target branch)
+
+permissions:
+  contents: read          # the job only reads the repo; least privilege
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true   # a new push to the same branch/PR cancels the old run
+
+jobs:
+  backend:
+    name: Backend build and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend   # every `run:` step starts in backend/
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build and run all tests
+        run: ./mvnw -B verify
