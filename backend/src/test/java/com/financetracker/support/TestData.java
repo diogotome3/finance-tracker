@@ -2,6 +2,8 @@ package com.financetracker.support;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.financetracker.category.Category;
+import com.financetracker.common.domain.TransactionType;
 import com.financetracker.user.AppUser;
 
 /**
@@ -40,6 +42,55 @@ public final class TestData {
 
         public AppUser build() {
             return new AppUser(email, displayName);
+        }
+    }
+
+    public static CategoryBuilder aCategory() {
+        return new CategoryBuilder();
+    }
+
+    public static final class CategoryBuilder {
+
+        // No default owner: categories.user_id is a foreign key, so a test must pass a saved user's id.
+        private Long userId;
+        private String name = "Category " + SEQUENCE.incrementAndGet();
+        private TransactionType type = TransactionType.EXPENSE;
+        private String description;
+        private String color = "#1A2B3C";
+
+        private CategoryBuilder() {
+        }
+
+        public CategoryBuilder ownedBy(Long userId) {
+            this.userId = userId;
+            return this;
+        }
+
+        public CategoryBuilder withName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public CategoryBuilder withType(TransactionType type) {
+            this.type = type;
+            return this;
+        }
+
+        public CategoryBuilder withDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public CategoryBuilder withColor(String color) {
+            this.color = color;
+            return this;
+        }
+
+        public Category build() {
+            Category category = new Category(userId, name, type);
+            category.setDescription(description);
+            category.setColor(color);
+            return category;
         }
     }
 }
