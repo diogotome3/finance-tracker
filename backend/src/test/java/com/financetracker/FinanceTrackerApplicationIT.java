@@ -2,12 +2,15 @@ package com.financetracker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Clock;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import com.financetracker.common.config.AppProperties;
 import com.financetracker.support.TestcontainersConfiguration;
 
 @Import(TestcontainersConfiguration.class)
@@ -16,6 +19,12 @@ class FinanceTrackerApplicationIT {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private AppProperties appProperties;
+
+    @Autowired
+    private Clock clock;
 
 	@Test
 	void contextLoads() {
@@ -46,4 +55,12 @@ class FinanceTrackerApplicationIT {
         assertThat(success).isTrue();
     }
 
+    @Test
+    void bindsAppPropertiesFromApplicationYaml_andProvidesAClock() {
+        // Proves the real application.yaml binds and @ConfigurationPropertiesScan registers AppProperties.
+        assertThat(appProperties.defaultUserId()).isEqualTo(1L);
+        assertThat(appProperties.currency().getCurrencyCode()).isEqualTo("EUR");
+        assertThat(appProperties.cors().allowedOrigins()).isNotEmpty();
+        assertThat(clock).isNotNull();
+    }
 }
