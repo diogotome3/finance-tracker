@@ -28,13 +28,21 @@ spring:
     problemdetails:
       enabled: true
 
-server:
-  error:
-    include-stacktrace: never
-    include-message: never
+  # Never put stack traces or exception messages in error responses.
+  # (Spring Boot 4 moved these from server.error.* to spring.web.error.*)
+  web:
+    error:
+      include-stacktrace: never
+      include-message: never
 
 management:
   endpoints:
     web:
       exposure:
         include: health, info
+
+app:
+  default-user-id: 1
+  currency: EUR
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
