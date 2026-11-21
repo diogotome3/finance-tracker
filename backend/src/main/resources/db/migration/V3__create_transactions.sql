@@ -11,9 +11,7 @@ CREATE TABLE transactions (
     updated_at        TIMESTAMPTZ    NOT NULL DEFAULT now(),
     -- Same user AND same type as the category. NO ACTION (the default) rather than RESTRICT,
     -- so deleting a user still cascades to both categories and transactions in one statement.
-    CONSTRAINT fk_transactions_category
-        FOREIGN KEY (category_id, user_id, type)
-        REFERENCES categories (id, user_id, type)
+    CONSTRAINT fk_transactions_category FOREIGN KEY (category_id, user_id, type) REFERENCES categories (id, user_id, type)
 );
 
 -- Main access path: a user's transactions, newest first (listing, dashboard, monthly stats)
