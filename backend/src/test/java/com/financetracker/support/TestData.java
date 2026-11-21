@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.financetracker.budget.MonthlyBudget;
 import com.financetracker.category.Category;
 import com.financetracker.common.domain.TransactionType;
 import com.financetracker.transaction.Transaction;
@@ -159,6 +160,47 @@ public final class TestData {
             Transaction transaction = new Transaction(owner, category, type, description, amount, date);
             transaction.setNotes(notes);
             return transaction;
+        }
+    }
+
+    public static MonthlyBudgetBuilder aMonthlyBudget() {
+        return new MonthlyBudgetBuilder();
+    }
+
+    public static final class MonthlyBudgetBuilder {
+
+        // No default owner: monthly_budgets.user_id is a foreign key, so a test must pass a saved user's id.
+        private Long userId;
+        private int year = 2026;
+        private int month = 1;
+        private BigDecimal amount = new BigDecimal("1000.00");
+
+        private MonthlyBudgetBuilder() {
+        }
+
+        public MonthlyBudgetBuilder ownedBy(Long userId) {
+            this.userId = userId;
+            return this;
+        }
+
+        public MonthlyBudgetBuilder forYear(int year) {
+            this.year = year;
+            return this;
+        }
+
+        public MonthlyBudgetBuilder forMonth(int month) {
+            this.month = month;
+            return this;
+        }
+
+        // String, not double: new BigDecimal("0.10") is exact, a double literal is not
+        public MonthlyBudgetBuilder withAmount(String amount) {
+            this.amount = new BigDecimal(amount);
+            return this;
+        }
+
+        public MonthlyBudget build() {
+            return new MonthlyBudget(userId, year, month, amount);
         }
     }
 }
