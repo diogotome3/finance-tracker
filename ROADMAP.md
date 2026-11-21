@@ -13,7 +13,7 @@
 ### Backend
 - [x] **Phase 0: Project setup.** Repository, README, roadmap, conventions.
 - [x] **Phase 1: Backend skeleton.** Spring Boot app, PostgreSQL in Docker, Flyway, health check, CI.
-- [ ] **Phase 2: Database schema.** Migrations, constraints, default categories, JPA entities.
+- [x] **Phase 2: Database schema.** Migrations, constraints, default categories, JPA entities.
 - [ ] **Phase 3: API foundations.** Error handling, validation, security/CORS config, Swagger UI.
 - [ ] **Phase 4: Categories API.** Category CRUD with business rules.
 - [ ] **Phase 5: Transactions API.** Transaction CRUD with validation.

@@ -97,6 +97,24 @@ class CategoryRepositoryIT {
     }
 
     @Test
+    void rejectsNameLongerThan50() {
+        Category category = aCategory().ownedBy(user.getId()).withName("x".repeat(51)).build();
+
+        assertThatThrownBy(() -> categories.saveAndFlush(category))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("value too long for type character varying(50)");
+    }
+
+    @Test
+    void rejectsDescriptionLongerThan255() {
+        Category category = aCategory().ownedBy(user.getId()).withDescription("x".repeat(256)).build();
+
+        assertThatThrownBy(() -> categories.saveAndFlush(category))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("value too long for type character varying(255)");
+    }
+
+    @Test
     void rejectsUnknownUser() {
         Category category = aCategory().ownedBy(999_999L).build();
 
