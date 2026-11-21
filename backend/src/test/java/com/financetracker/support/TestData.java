@@ -1,9 +1,12 @@
 package com.financetracker.support;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.financetracker.category.Category;
 import com.financetracker.common.domain.TransactionType;
+import com.financetracker.transaction.Transaction;
 import com.financetracker.user.AppUser;
 
 /**
@@ -91,6 +94,71 @@ public final class TestData {
             category.setDescription(description);
             category.setColor(color);
             return category;
+        }
+    }
+
+    public static TransactionBuilder anExpense() {
+        return new TransactionBuilder(TransactionType.EXPENSE);
+    }
+
+    public static TransactionBuilder anIncome() {
+        return new TransactionBuilder(TransactionType.INCOME);
+    }
+
+    /**
+     * Reads like: {@code anExpense().in(food).amount("12.50").on("2026-11-03").build()}.
+     * The owner defaults to the category's owner; override it with {@code ownedBy} to test the composite FK.
+     */
+    public static final class TransactionBuilder {
+
+        // No default category: transactions.category_id is a foreign key, so a test must pass a saved category.
+        private Category category;
+        private Long userId;
+        private TransactionType type;
+        private String description = "Transaction " + SEQUENCE.incrementAndGet();
+        private BigDecimal amount = new BigDecimal("10.00");
+        private LocalDate date = LocalDate.of(2026, 1, 15);
+        private String notes;
+
+        private TransactionBuilder(TransactionType type) {
+            this.type = type;
+        }
+
+        public TransactionBuilder in(Category category) {
+            this.category = category;
+            return this;
+        }
+
+        public TransactionBuilder ownedBy(Long userId) {
+            this.userId = userId;
+            return this;
+        }
+
+        public TransactionBuilder amount(String amount) {
+            this.amount = new BigDecimal(amount);
+            return this;
+        }
+
+        public TransactionBuilder on(String isoDate) {
+            this.date = LocalDate.parse(isoDate);
+            return this;
+        }
+
+        public TransactionBuilder describedAs(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public TransactionBuilder withNotes(String notes) {
+            this.notes = notes;
+            return this;
+        }
+
+        public Transaction build() {
+            Long owner = userId != null ? userId : category.getUserId();
+            Transaction transaction = new Transaction(owner, category, type, description, amount, date);
+            transaction.setNotes(notes);
+            return transaction;
         }
     }
 }
