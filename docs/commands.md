@@ -125,7 +125,7 @@ Stop a running app with **Ctrl+C**.
 | `git pull` | Downloads and merges new commits from GitHub. |
 | `git log --oneline -5` | Shows the last 5 commits, one line each. |
 | `git checkout main` | Switches to the `main` branch. |
-| `git checkout -b <type>/<name>` | Creates a new branch and switches to it, e.g. `feat/categories-api`. |
+| `git checkout -b Issue-<N>-<short-name>` | Creates a new branch for issue N and switches to it, e.g. `Issue-15-seed-defaults`. |
 | `git push -u origin <branch>` | First push of a new branch. `-u` links it to GitHub, so later pushes are just `git push`. |
 | `git diff` | Shows unstaged changes. Use `git diff --staged` for staged ones. |
 
@@ -150,9 +150,9 @@ Stop a running app with **Ctrl+C**.
 **Workflow with a PR** (from issue #6 on):
 ```bash
 git checkout main && git pull
-git checkout -b feat/<name>
+git checkout -b Issue-<N>-<short-name>
 # ...work and commit...
-git push -u origin feat/<name>
+git push -u origin Issue-<N>-<short-name>
 gh pr create --fill
 gh pr merge --squash --delete-branch
 ```

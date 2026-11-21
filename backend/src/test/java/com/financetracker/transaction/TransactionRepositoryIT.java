@@ -157,6 +157,24 @@ class TransactionRepositoryIT {
     }
 
     @Test
+    void rejectsDescriptionLongerThan255() {
+        Transaction transaction = anExpense().in(food).describedAs("x".repeat(256)).build();
+
+        assertThatThrownBy(() -> transactions.saveAndFlush(transaction))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("value too long for type character varying(255)");
+    }
+
+    @Test
+    void rejectsNotesLongerThan1000() {
+        Transaction transaction = anExpense().in(food).withNotes("x".repeat(1001)).build();
+
+        assertThatThrownBy(() -> transactions.saveAndFlush(transaction))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("value too long for type character varying(1000)");
+    }
+
+    @Test
     void rejectsDeletingCategoryStillInUse() {
         transactions.saveAndFlush(anExpense().in(food).build());
         // Otherwise Hibernate itself refuses (managed transaction -> removed category) before any SQL runs,
