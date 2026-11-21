@@ -11,7 +11,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.financetracker.common.config.AppProperties;
+import com.financetracker.common.security.CurrentUserProvider;
 import com.financetracker.support.TestcontainersConfiguration;
+import com.financetracker.user.AppUserRepository;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest
@@ -25,6 +27,12 @@ class FinanceTrackerApplicationIT {
 
     @Autowired
     private Clock clock;
+
+    @Autowired
+    private CurrentUserProvider currentUserProvider;
+
+    @Autowired
+    private AppUserRepository users;
 
 	@Test
 	void contextLoads() {
@@ -62,5 +70,12 @@ class FinanceTrackerApplicationIT {
         assertThat(appProperties.currency().getCurrencyCode()).isEqualTo("EUR");
         assertThat(appProperties.cors().allowedOrigins()).isNotEmpty();
         assertThat(clock).isNotNull();
+    }
+
+    @Test
+    void currentUserIsTheSeededDefaultUser() {
+        // Links app.default-user-id to the V5 seed: pointing it at a missing user would break every write.
+        // Also proves exactly one CurrentUserProvider bean exists (zero or two would fail the context).
+        assertThat(users.existsById(currentUserProvider.currentUserId())).isTrue();
     }
 }
