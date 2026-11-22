@@ -24,10 +24,6 @@ spring:
         jdbc:
           time_zone: UTC
 
-  mvc:
-    problemdetails:
-      enabled: true
-
   # Never put stack traces or exception messages in error responses.
   # (Spring Boot 4 moved these from server.error.* to spring.web.error.*)
   web:
@@ -39,7 +35,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info
+        include: health
 
 app:
   default-user-id: 1
