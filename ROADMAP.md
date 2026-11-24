@@ -31,6 +31,22 @@
 ### Release
 - [ ] **Phase 14: v1.0.** Hardening, documentation, screenshots, first release.
 
-## Later (after v1.0)
+## After v1.0
 
-Authentication and multi-user support · per-category budgets · CSV import · recurring transactions · multi-currency
+### v1.1: Import and automatic categorization
+- [ ] **Phase 15: Import pipeline.** Transaction source tracking (manual / import / bank) and a reusable pipeline: parse → normalize → deduplicate → categorize → save.
+- [ ] **Phase 16: CSV import.** Upload a bank statement export, preview it, and import it without creating duplicates.
+- [ ] **Phase 17: Categorization rules.** Keyword rules that map transaction descriptions to categories, with *Other* as the fallback.
+- [ ] **Phase 18: Learning from corrections.** Recategorizing an imported transaction offers to create a rule for it.
+
+### v1.2: Authentication
+- [ ] **Phase 19: Authentication and multi-user support.** Required before any real bank account is connected.
+
+### v1.3: Bank sync (Open Banking)
+- [ ] **Phase 20: Bank connections.** Read-only account access through a PSD2 aggregator, including the consent flow, linked accounts, and consent expiry and renewal.
+- [ ] **Phase 21: Automatic sync.** A scheduled job that pulls new transactions into the import pipeline.
+- [ ] **Phase 22: Bank sync UI.** Connect a bank, see connection status, re-authorize expired consents.
+
+## Later
+
+Per-category budgets · recurring transactions · multi-currency
