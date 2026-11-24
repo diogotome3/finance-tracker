@@ -47,3 +47,14 @@ app:
   currency: EUR
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+# API docs. Set explicitly (instead of relying on springdoc's defaults) so that turning them off in a
+# production profile is a visible choice. This also silences springdoc's "enabled by default" startup warnings.
+# If a path changes, update the public URLs in SecurityConfig too.
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
