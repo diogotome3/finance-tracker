@@ -184,15 +184,30 @@ All configuration comes from environment variables (see [`.env.example`](.env.ex
 - **OpenAPI spec:** `http://localhost:8080/v3/api-docs`
 - **Bruno collection:** open the [`bruno/`](bruno/) folder in [Bruno](https://www.usebruno.com/)
 
-Main resources:
+Main resources (✅ available; the rest are planned in the [roadmap](ROADMAP.md)):
 
 | Resource | Endpoints |
 |---|---|
+| Categories ✅ | `GET/POST /api/categories`, `GET/PUT/DELETE /api/categories/{id}` |
 | Transactions | `GET/POST /api/transactions`, `GET/PUT/DELETE /api/transactions/{id}` |
-| Categories | `GET/POST /api/categories`, `GET/PUT/DELETE /api/categories/{id}` |
 | Budgets | `GET/POST /api/budgets`, `GET/PUT/DELETE /api/budgets/{year}/{month}` |
 | Dashboard | `GET /api/dashboard?year=&month=` |
 | Statistics | `GET /api/statistics/monthly`, `/categories`, `/summary` |
+
+### Categories
+
+| Method | Path | Success | Errors |
+|---|---|---|---|
+| `GET` | `/api/categories?type=EXPENSE` (`type` optional) | 200, sorted by type then name | 400 |
+| `GET` | `/api/categories/{id}` | 200 | 404 |
+| `POST` | `/api/categories` | 201 + `Location` | 400, 409 |
+| `PUT` | `/api/categories/{id}` | 200 | 400, 404, 409 |
+| `DELETE` | `/api/categories/{id}` | 204 | 404, 409 |
+
+- Not paginated: a user has a small, bounded list of categories.
+- Names are unique per type, ignoring case: `Coffee` and `coffee` can't both be expense categories (409).
+- A category used by transactions can't change its type or be deleted (409, with the number of transactions).
+- Another user's category behaves as if it didn't exist (404).
 
 ---
 

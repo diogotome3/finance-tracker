@@ -1,0 +1,30 @@
+info:
+  name: Update category
+  type: http
+  seq: 5
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/categories/{{categoryId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "{{categoryName}} (updated)",
+        "type": "EXPENSE",
+        "description": "Updated by Bruno",
+        "color": "#000000"
+      }
+  auth: inherit
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
