@@ -1,0 +1,35 @@
+info:
+  name: Create category
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/categories"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "{{categoryName}}",
+        "type": "EXPENSE",
+        "description": "Created by Bruno",
+        "color": "#6F4E37"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: bru.setVar("categoryName", "Coffee " + Date.now());
+    - type: after-response
+      code: bru.setVar("categoryId", res.body.id);
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "201"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
