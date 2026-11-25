@@ -189,4 +189,25 @@ class CategoryRepositoryIT {
         assertThat(categories.existsByUserIdAndTypeAndNameIgnoreCase(user.getId(), INCOME, "Food")).isFalse();
         assertThat(categories.existsByUserIdAndTypeAndNameIgnoreCase(otherUser.getId(), EXPENSE, "Food")).isFalse();
     }
+
+    @Test
+    void existsByUserIdAndTypeAndNameIgnoreCaseAndIdNot_ignoresTheCategoryItself() {
+        Category coffee = categories.saveAndFlush(
+                aCategory().ownedBy(user.getId()).withName("Coffee").withType(EXPENSE).build());
+        Category food = categories.saveAndFlush(
+                aCategory().ownedBy(user.getId()).withName("Food").withType(EXPENSE).build());
+
+        // Its own name, in any case, is not a conflict...
+        assertThat(categories.existsByUserIdAndTypeAndNameIgnoreCaseAndIdNot(
+                user.getId(), EXPENSE, "coffee", coffee.getId())).isFalse();
+        // ...another category's name is, ignoring case...
+        assertThat(categories.existsByUserIdAndTypeAndNameIgnoreCaseAndIdNot(
+                user.getId(), EXPENSE, "FOOD", coffee.getId())).isTrue();
+        // ...but only within the same type and the same user.
+        assertThat(categories.existsByUserIdAndTypeAndNameIgnoreCaseAndIdNot(
+                user.getId(), INCOME, "Food", coffee.getId())).isFalse();
+        assertThat(categories.existsByUserIdAndTypeAndNameIgnoreCaseAndIdNot(
+                otherUser.getId(), EXPENSE, "Food", coffee.getId())).isFalse();
+        assertThat(food.getId()).isNotEqualTo(coffee.getId());
+    }
 }

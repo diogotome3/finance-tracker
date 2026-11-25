@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -27,6 +28,7 @@ import com.financetracker.common.domain.TransactionType;
 import com.financetracker.common.exception.ConflictException;
 import com.financetracker.common.exception.ResourceNotFoundException;
 import com.financetracker.common.security.CurrentUserProvider;
+import com.financetracker.transaction.TransactionRepository;
 
 /**
  * Business rules of {@link CategoryService}, with the repository and current user mocked.
@@ -47,11 +49,15 @@ class CategoryServiceTest {
     @Mock
     private CurrentUserProvider currentUserProvider;
 
+    @Mock
+    private TransactionRepository transactionRepository;
+
     private CategoryService service;
 
     @BeforeEach
     void setUp() {
-        service = new CategoryService(categoryRepository, new CategoryMapper(), currentUserProvider);
+        service = new CategoryService(categoryRepository, new CategoryMapper(), currentUserProvider,
+                transactionRepository);
         // Every service method asks for the current user, so this stub is used by every test (strict stubs).
         when(currentUserProvider.currentUserId()).thenReturn(USER_ID);
     }
@@ -203,6 +209,162 @@ class CategoryServiceTest {
             CategoryResponse result = service.create(new CategoryRequest("Groceries", INCOME, null, null));
 
             assertThat(result.type()).isEqualTo(INCOME);
+        }
+    }
+
+    @Nested
+    class Update {
+
+        @Test
+        void notFound_throwsResourceNotFound_andChecksNothingElse() {
+            when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.update(5L, new CategoryRequest("Food", EXPENSE, null, null)))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessage("Category 5 not found");
+            verifyNoInteractions(transactionRepository);
+        }
+
+        @Test
+        void appliesAllFields_andReturnsTheUpdatedCategory() {
+            Category category = savedCategory(5L, USER_ID, "Food", EXPENSE);
+            when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
+
+            CategoryResponse result = service.update(5L,
+                    new CategoryRequest("  Groceries  ", EXPENSE, "Weekly shop", "#8B5CF6"));
+
+            assertThat(result.id()).isEqualTo(5L);
+            assertThat(result.name()).isEqualTo("Groceries");
+            assertThat(result.type()).isEqualTo(EXPENSE);
+            assertThat(result.description()).isEqualTo("Weekly shop");
+            assertThat(result.color()).isEqualTo("#8B5CF6");
+            // The managed entity itself was changed: dirty checking writes it at commit.
+            assertThat(category.getName()).isEqualTo("Groceries");
+        }
+
+        @Test
+        void nameTakenByAnotherCategoryOfTheSameType_throwsConflict_andChangesNothing() {
+            Category category = savedCategory(5L, USER_ID, "Food", EXPENSE);
+            when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
+            when(categoryRepository.existsByUserIdAndTypeAndNameIgnoreCaseAndIdNot(USER_ID, EXPENSE, "transport", 5L))
+                    .thenReturn(true);
+
+            assertThatThrownBy(() -> service.update(5L, new CategoryRequest("transport", EXPENSE, null, null)))
+                    .isInstanceOf(ConflictException.class)
+                    .hasMessage("An expense category named 'transport' already exists");
+            assertThat(category.getName()).isEqualTo("Food");
+        }
+
+        @Test
+        void duplicateCheck_usesTheNewType() {
+            // Moving "Food" to INCOME must clash with an existing INCOME category, not an EXPENSE one.
+            Category category = savedCategory(5L, USER_ID, "Food", EXPENSE);
+            when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
+            when(transactionRepository.existsByCategoryId(5L)).thenReturn(false);
+            when(categoryRepository.existsByUserIdAndTypeAndNameIgnoreCaseAndIdNot(USER_ID, INCOME, "Salary", 5L))
+                    .thenReturn(true);
+
+            assertThatThrownBy(() -> service.update(5L, new CategoryRequest("Salary", INCOME, null, null)))
+                    .isInstanceOf(ConflictException.class)
+                    .hasMessage("An income category named 'Salary' already exists");
+        }
+
+        @Test
+        void changingOnlyTheCaseOfItsOwnName_isAllowed() {
+            // The query excludes the category being updated, so its own name is no conflict (verified in the IT).
+            Category category = savedCategory(5L, USER_ID, "Coffee", EXPENSE);
+            when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
+
+            CategoryResponse result = service.update(5L, new CategoryRequest("coffee", EXPENSE, null, null));
+
+            assertThat(result.name()).isEqualTo("coffee");
+            verify(categoryRepository).existsByUserIdAndTypeAndNameIgnoreCaseAndIdNot(USER_ID, EXPENSE, "coffee", 5L);
+            verify(categoryRepository, never()).existsByUserIdAndTypeAndNameIgnoreCase(anyLong(), any(), any());
+        }
+
+        @Test
+        void changingTheType_ofACategoryWithTransactions_throwsConflict_andChangesNothing() {
+            Category category = savedCategory(5L, USER_ID, "Food", EXPENSE);
+            when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
+            when(transactionRepository.existsByCategoryId(5L)).thenReturn(true);
+
+            assertThatThrownBy(() -> service.update(5L, new CategoryRequest("Food", INCOME, null, null)))
+                    .isInstanceOf(ConflictException.class)
+                    .hasMessage("Cannot change the type of a category that has transactions");
+            assertThat(category.getType()).isEqualTo(EXPENSE);
+        }
+
+        @Test
+        void changingTheType_ofAnUnusedCategory_isAllowed() {
+            Category category = savedCategory(5L, USER_ID, "Other", EXPENSE);
+            when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
+            when(transactionRepository.existsByCategoryId(5L)).thenReturn(false);
+
+            CategoryResponse result = service.update(5L, new CategoryRequest("Other", INCOME, null, null));
+
+            assertThat(result.type()).isEqualTo(INCOME);
+        }
+
+        @Test
+        void keepingTheType_neverChecksTransactions() {
+            Category category = savedCategory(5L, USER_ID, "Food", EXPENSE);
+            when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
+
+            service.update(5L, new CategoryRequest("Groceries", EXPENSE, null, null));
+
+            verifyNoInteractions(transactionRepository);
+        }
+    }
+
+    @Nested
+    class Delete {
+
+        @Test
+        void notFound_throwsResourceNotFound_andDeletesNothing() {
+            when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.delete(5L))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessage("Category 5 not found");
+            verifyNoInteractions(transactionRepository);
+            verify(categoryRepository, never()).delete(any());
+            verify(categoryRepository, never()).deleteById(any());
+        }
+
+        @Test
+        void inUse_throwsConflictWithTheCount_andNeverDeletes() {
+            Category category = savedCategory(5L, USER_ID, "Food", EXPENSE);
+            when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
+            when(transactionRepository.countByCategoryId(5L)).thenReturn(3L);
+
+            assertThatThrownBy(() -> service.delete(5L))
+                    .isInstanceOf(ConflictException.class)
+                    .hasMessage("Category is used by 3 transactions.");
+            verify(categoryRepository, never()).delete(any());
+            verify(categoryRepository, never()).deleteById(any());
+        }
+
+        @Test
+        void inUseByOneTransaction_usesTheSingular() {
+            Category category = savedCategory(5L, USER_ID, "Food", EXPENSE);
+            when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
+            when(transactionRepository.countByCategoryId(5L)).thenReturn(1L);
+
+            assertThatThrownBy(() -> service.delete(5L))
+                    .isInstanceOf(ConflictException.class)
+                    .hasMessage("Category is used by 1 transaction.");
+            verify(categoryRepository, never()).delete(any());
+        }
+
+        @Test
+        void notInUse_deletesTheLoadedCategory() {
+            Category category = savedCategory(5L, USER_ID, "Food", EXPENSE);
+            when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
+            when(transactionRepository.countByCategoryId(5L)).thenReturn(0L);
+
+            service.delete(5L);
+
+            verify(categoryRepository).delete(category);
         }
     }
 }
