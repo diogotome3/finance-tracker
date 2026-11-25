@@ -215,6 +215,11 @@ class CategoryServiceTest {
     @Nested
     class Update {
 
+        /** Like the real repository, saveAndFlush returns the entity it was given. */
+        private void saveAndFlushReturnsItsArgument() {
+            when(categoryRepository.saveAndFlush(any(Category.class))).thenAnswer(inv -> inv.getArgument(0));
+        }
+
         @Test
         void notFound_throwsResourceNotFound_andChecksNothingElse() {
             when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.empty());
@@ -229,6 +234,7 @@ class CategoryServiceTest {
         void appliesAllFields_andReturnsTheUpdatedCategory() {
             Category category = savedCategory(5L, USER_ID, "Food", EXPENSE);
             when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
+            saveAndFlushReturnsItsArgument();
 
             CategoryResponse result = service.update(5L,
                     new CategoryRequest("  Groceries  ", EXPENSE, "Weekly shop", "#8B5CF6"));
@@ -238,8 +244,10 @@ class CategoryServiceTest {
             assertThat(result.type()).isEqualTo(EXPENSE);
             assertThat(result.description()).isEqualTo("Weekly shop");
             assertThat(result.color()).isEqualTo("#8B5CF6");
-            // The managed entity itself was changed: dirty checking writes it at commit.
+            // The loaded entity is changed and flushed straight away, so auditing has set updatedAt before the
+            // response is built from it (CategoryApiIT proves the timestamps against the database).
             assertThat(category.getName()).isEqualTo("Groceries");
+            verify(categoryRepository).saveAndFlush(category);
         }
 
         @Test
@@ -253,6 +261,7 @@ class CategoryServiceTest {
                     .isInstanceOf(ConflictException.class)
                     .hasMessage("An expense category named 'transport' already exists");
             assertThat(category.getName()).isEqualTo("Food");
+            verify(categoryRepository, never()).saveAndFlush(any());
         }
 
         @Test
@@ -267,6 +276,7 @@ class CategoryServiceTest {
             assertThatThrownBy(() -> service.update(5L, new CategoryRequest("Salary", INCOME, null, null)))
                     .isInstanceOf(ConflictException.class)
                     .hasMessage("An income category named 'Salary' already exists");
+            verify(categoryRepository, never()).saveAndFlush(any());
         }
 
         @Test
@@ -274,6 +284,7 @@ class CategoryServiceTest {
             // The query excludes the category being updated, so its own name is no conflict (verified in the IT).
             Category category = savedCategory(5L, USER_ID, "Coffee", EXPENSE);
             when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
+            saveAndFlushReturnsItsArgument();
 
             CategoryResponse result = service.update(5L, new CategoryRequest("coffee", EXPENSE, null, null));
 
@@ -292,6 +303,7 @@ class CategoryServiceTest {
                     .isInstanceOf(ConflictException.class)
                     .hasMessage("Cannot change the type of a category that has transactions");
             assertThat(category.getType()).isEqualTo(EXPENSE);
+            verify(categoryRepository, never()).saveAndFlush(any());
         }
 
         @Test
@@ -299,6 +311,7 @@ class CategoryServiceTest {
             Category category = savedCategory(5L, USER_ID, "Other", EXPENSE);
             when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
             when(transactionRepository.existsByCategoryId(5L)).thenReturn(false);
+            saveAndFlushReturnsItsArgument();
 
             CategoryResponse result = service.update(5L, new CategoryRequest("Other", INCOME, null, null));
 
@@ -309,6 +322,7 @@ class CategoryServiceTest {
         void keepingTheType_neverChecksTransactions() {
             Category category = savedCategory(5L, USER_ID, "Food", EXPENSE);
             when(categoryRepository.findByIdAndUserId(5L, USER_ID)).thenReturn(Optional.of(category));
+            saveAndFlushReturnsItsArgument();
 
             service.update(5L, new CategoryRequest("Groceries", EXPENSE, null, null));
 
