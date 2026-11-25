@@ -167,6 +167,21 @@ class CategoryRepositoryIT {
     }
 
     @Test
+    void findAllByUserIdAndType_returnsOnlyUsersCategoriesOfThatType_sortedByName() {
+        categories.saveAndFlush(aCategory().ownedBy(user.getId()).withName("Transport").withType(EXPENSE).build());
+        categories.saveAndFlush(aCategory().ownedBy(user.getId()).withName("Food").withType(EXPENSE).build());
+        categories.saveAndFlush(aCategory().ownedBy(user.getId()).withName("Salary").withType(INCOME).build());
+        categories.saveAndFlush(aCategory().ownedBy(otherUser.getId()).withName("Books").withType(EXPENSE).build());
+
+        assertThat(categories.findAllByUserIdAndTypeOrderByNameAsc(user.getId(), EXPENSE))
+                .extracting(Category::getName)
+                .containsExactly("Food", "Transport");
+        assertThat(categories.findAllByUserIdAndTypeOrderByNameAsc(user.getId(), INCOME))
+                .extracting(Category::getName)
+                .containsExactly("Salary");
+    }
+
+    @Test
     void existsByUserIdAndTypeAndNameIgnoreCase_matchesIgnoringCase_onlyForSameUserAndType() {
         categories.saveAndFlush(aCategory().ownedBy(user.getId()).withName("Food").withType(EXPENSE).build());
 
