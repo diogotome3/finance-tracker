@@ -74,7 +74,8 @@ public class CategoryService {
                     + request.name() + "' already exists");
         }
         categoryMapper.updateEntity(category, request);
-        return categoryMapper.toResponse(category);
+        // Flush now, not at commit: auditing sets updatedAt during the flush, and the response is built from it.
+        return categoryMapper.toResponse(categoryRepository.saveAndFlush(category));
     }
 
     @Transactional
